@@ -52,7 +52,7 @@ void fpstepper::setup() {
 
 void fpstepper::writeHBridge(uint8_t step) {
 	//TODO wirte actual controll words to this array
-	const uint8_t _hBridgeCOntrolWords[30] = { 
+	const uint8_t hBridgeControlWords[30] = {
 			0x00, 0x61, 0x5D,
 			0x00, 0x6A, 0x1D,
 			0x00, 0x6B, 0x85,
@@ -63,7 +63,7 @@ void fpstepper::writeHBridge(uint8_t step) {
 			0x00, 0x57, 0x46,
 			0x00, 0x57, 0x58,
 			0x00, 0x07, 0x5D};
-	//configure SPI B us
+	//configure SPI Bus
 	SPI.beginTransaction(_shiftSPISettings);
 	//activate Chipselct and buffer enable
 	digitalWrite(_BUFFEN, LOW);
@@ -72,7 +72,7 @@ void fpstepper::writeHBridge(uint8_t step) {
 	//see the data for 3 step in this file data_on_bus_stepp3_example.PNG
 	//the array has 30 elements we have 10 steps and 3 shift registers so wee need 30 bytes for evry step
 	//the byte order is Shift3,SHIFT2,SHIFT1 since the data are shifted through the registers
-	uint8_t *addr = (uint8_t*) _hBridgeCOntrolWords + (step * 3);
+	uint8_t *addr = (uint8_t*) hBridgeControlWords + (step * 3);
 	SPI.transfer(addr, 3);
 	SPI.endTransaction();
 	//deactivate Chipselct and buffer enable
@@ -114,5 +114,35 @@ void fpstepper::setCurrentLimit(uint8_t currentLimit){
 	digitalWrite(_LDAC, LOW);
 	digitalWrite(_LDAC, HIGH);
 	//Disable Buffer
+	digitalWrite(_BUFFEN, HIGH);
+}
+
+void fpstepper::testBridge(uint8_t bridge,bool direction)//direction ==true-->forward
+{
+	const uint8_t hBridgeTestControlWords[36] = {
+			0x00,0x00,0x00,//1st Bridge backwards
+			0x00,0x00,0x00,//1st Bridge forwards
+			0x00,0x00,0x00,//2nd Bridge backwards
+			0x00,0x00,0x00,//2nd Bridge forwards
+			0x00,0x00,0x00,
+			0x00,0x00,0x00,
+			0x00,0x00,0x00,
+			0x00,0x00,0x00,
+			0x00,0x00,0x00,
+			0x00,0x00,0x00,
+			0x00,0x00,0x00,
+			0x00,0x00,0x00,};
+	//configure SPI Bus
+	SPI.beginTransaction(_shiftSPISettings);
+	//activate Chipselct and buffer enable
+	digitalWrite(_BUFFEN, LOW);
+	digitalWrite(_SHIFTSS, LOW);
+	//write coresponding data to the bus
+	uint8_t controalWordNumber=(bridge*2)+(uint8_t)direction;//
+	uint8_t *addr = (uint8_t*) hBridgeTestControlWords + (controalWordNumber * 3);
+	SPI.transfer(addr, 3);
+	SPI.endTransaction();
+	//deactivate Chipselct and buffer enable
+	digitalWrite(_SHIFTSS, HIGH);
 	digitalWrite(_BUFFEN, HIGH);
 }

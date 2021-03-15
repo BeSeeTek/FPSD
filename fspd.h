@@ -33,6 +33,7 @@ public:
 	float getAng();
 	// sets an relative currentlimit
 	void setCurrentLimit(uint8_t currentLimt);
+	void testBridge(uint8_t bridge,bool direction);
 
 private:
 	int _SHIFTSS = 0;
