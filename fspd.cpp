@@ -52,17 +52,6 @@ void fpstepper::setup() {
 
 void fpstepper::writeHBridge(uint8_t step) {
 	//TODO wirte actual controll words to this array
-	const uint8_t hBridgeControlWords[30] = {
-			0x00, 0x61, 0x5D,
-			0x00, 0x6A, 0x1D,
-			0x00, 0x6B, 0x85,
-			0x00, 0x6B, 0xA8,
-			0x00, 0x0B, 0xAE,
-			0x00, 0x51, 0xAE,
-			0x00, 0x56, 0x2E,
-			0x00, 0x57, 0x46,
-			0x00, 0x57, 0x58,
-			0x00, 0x07, 0x5D};
 	//configure SPI Bus
 	SPI.beginTransaction(_shiftSPISettings);
 	//activate Chipselct and buffer enable
@@ -119,19 +108,6 @@ void fpstepper::setCurrentLimit(uint8_t currentLimit){
 
 void fpstepper::testBridge(uint8_t bridge,bool direction)//direction ==true-->forward
 {
-	const uint8_t hBridgeTestControlWords[36] = {
-			0x00,0x00,0x00,//1st Bridge backwards
-			0x00,0x00,0x00,//1st Bridge forwards
-			0x00,0x00,0x00,//2nd Bridge backwards
-			0x00,0x00,0x00,//2nd Bridge forwards
-			0x00,0x00,0x00,
-			0x00,0x00,0x00,
-			0x00,0x00,0x00,
-			0x00,0x00,0x00,
-			0x00,0x00,0x00,
-			0x00,0x00,0x00,
-			0x00,0x00,0x00,
-			0x00,0x00,0x00,};
 	//configure SPI Bus
 	SPI.beginTransaction(_shiftSPISettings);
 	//activate Chipselct and buffer enable
@@ -146,3 +122,29 @@ void fpstepper::testBridge(uint8_t bridge,bool direction)//direction ==true-->fo
 	digitalWrite(_SHIFTSS, HIGH);
 	digitalWrite(_BUFFEN, HIGH);
 }
+
+void fpstepper::writeMicrostep(uint8_t step)
+{
+	if (step<=NUMBERMICROSTEPS)
+	{
+		SPI.beginTransaction(_dacSPISettings);
+		digitalWrite(_BUFFEN, LOW);
+		digitalWrite(_DACSS, LOW);
+		for(uint8_t i;i<5;i++)
+		{
+			uint16_t DACWord=DACChannelPrefix[i]+DACData[step+i];
+			SPI.transfer16(DACWord);
+		}
+		SPI.endTransaction();
+		digitalWrite(_DACSS, HIGH);
+		SPI.beginTransaction(_shiftSPISettings);
+		uint8_t *addr = (uint8_t*) BridgeWords[step*3];
+		digitalWrite(_SHIFTSS, LOW);
+		SPI.transfer(addr, 3);
+		SPI.endTransaction();
+		digitalWrite(_LDAC, LOW);
+		digitalWrite(_LDAC, HIGH);
+		digitalWrite(_SHIFTSS, HIGH);
+	}
+}
+

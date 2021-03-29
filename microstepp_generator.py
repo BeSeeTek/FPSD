@@ -77,16 +77,15 @@ def generateDACVals(stepNumber=64,DACResBit=8,initialPhase=0):
     return DACVals,Signs,CosVals,Phase,fig
 
 def convertToCArrays(DACVals,Signs,ControalWords):
-    CDACVals={}
     lenControalword=len(ControalWords[0][0])
-    NUMBERINROW=10
-    for i in range(DACVals.shape[1]):
-        CDACVals[i]='static const uint8_t DACChannel'+str(i)+'['+str(DACVals.shape[0])+'] = { '
-        for j in range(DACVals.shape[0]):
-            CDACVals[i]=CDACVals[i]+hex(DACVals[j,i])+', '
-            if(j%NUMBERINROW==0 and j>0):
-                CDACVals[i]=CDACVals[i]+'\n\t\t\t\t'
-        CDACVals[i]=CDACVals[i]+'};'
+    CDACVals='static const uint8_t DACData[5*'+str(DACVals.shape[0])+'] = { '
+    for i in range(DACVals.shape[0]):
+        for j in range(DACVals.shape[1]):
+            CDACVals=CDACVals+hex(DACVals[i,j])+', '
+            if (i%10)==0 and j==DACVals.shape[1]-1:
+                CDACVals=CDACVals+'//This row holds '+str(i)+'. Step DACword 0,1,2,3,4,5 word for channel 0 is acced by DACData['+str(i*5)+']'
+        CDACVals=CDACVals+'\n\t\t\t\t'
+    CDACVals=CDACVals+'};'
     print(CDACVals)
 
     BridgeControalWords=np.zeros([lenControalword,DACVals.shape[0]]).astype(uint8)
@@ -99,6 +98,8 @@ def convertToCArrays(DACVals,Signs,ControalWords):
     for i in range(DACVals.shape[0]):
         for j in range(lenControalword):
             BridgeVALS=BridgeVALS+hex(BridgeControalWords[j,i])+','
+        if (i%10)==0:
+            BridgeVALS=BridgeVALS+'//This row holds '+str(i)+'. Step BridgeControalWord 0,1,2 first sihftOutWord is acced by BridgeWords['+str(i*3)+']'
         BridgeVALS=BridgeVALS+'\n\t\t\t\t'
     BridgeVALS=BridgeVALS+'};'
     print(BridgeVALS)
@@ -115,9 +116,8 @@ def convertToCArrays(DACVals,Signs,ControalWords):
  * NUMBER OF MICROSTEPS="""+str(DACVals.shape[0])+"""
  */
  #define NUMBERMICROSTEPS """+str(DACVals.shape[0])+'\n'
-    for DACArray in CDACVals.values():
-        Hfile=Hfile+DACArray
-        Hfile=Hfile+'\n\n'
+    Hfile=Hfile+CDACVals
+    Hfile=Hfile+'\n\n'
     Hfile=Hfile+BridgeVALS
     Hfile=Hfile+"""\n\n#endif /* FPSD_MICROSTEPS_H_ */"""
     print(Hfile)
