@@ -8,6 +8,7 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from pathlib import Path
 
 plt.rcParams['figure.dpi'] = 240
 plt.rcParams["figure.figsize"] = (16,9)
@@ -80,7 +81,7 @@ def convertToCArrays(DACVals,Signs,ControalWords):
     lenControalword=len(ControalWords[0][0])
     NUMBERINROW=10
     for i in range(DACVals.shape[1]):
-        CDACVals[i]='uint8_t DACChannel'+str(i)+'['+str(DACVals.shape[0])+'] = { '
+        CDACVals[i]='static const uint8_t DACChannel'+str(i)+'['+str(DACVals.shape[0])+'] = { '
         for j in range(DACVals.shape[0]):
             CDACVals[i]=CDACVals[i]+hex(DACVals[j,i])+', '
             if(j%NUMBERINROW==0 and j>0):
@@ -94,7 +95,7 @@ def convertToCArrays(DACVals,Signs,ControalWords):
             for j in range(lenControalword):
                 BridgeControalWords[j,i]=BridgeControalWords[j,i]|ControalWords[signIDX][Signs[i,signIDX]][j]
     print(BridgeControalWords)
-    BridgeVALS='uint8_t BridgeWords[3*'+str(DACVals.shape[0])+'] = { '
+    BridgeVALS='static const uint8_t BridgeWords[3*'+str(DACVals.shape[0])+'] = { '
     for i in range(DACVals.shape[0]):
         for j in range(lenControalword):
             BridgeVALS=BridgeVALS+hex(BridgeControalWords[j,i])+','
@@ -118,14 +119,16 @@ def convertToCArrays(DACVals,Signs,ControalWords):
         Hfile=Hfile+DACArray
         Hfile=Hfile+'\n\n'
     Hfile=Hfile+BridgeVALS
+    Hfile=Hfile+"""\n\n#endif /* FPSD_MICROSTEPS_H_ */"""
     print(Hfile)
-    with open('microstep'+str(DACVals.shape[0]).zfill(4)+'.h', 'w') as text_file:
+    with open('microsteps\microstep'+str(DACVals.shape[0]).zfill(4)+'.h', 'w') as text_file:
         text_file.write(Hfile)
     return CDACVals,BridgeVALS
 
 if __name__ == "__main__":
-    steps=[10,32,45,50,60,64,72,90,100,128,150,200,256]
+    Path("microsteps").mkdir(parents=True, exist_ok=True)
+    steps=[10,15,20,25,30,32,45,50,60,64,72,90,100,128,150,200,256]
     for stepcount in steps:
         DACVals,Signs,CosVals,Phase,fig=generateDACVals(stepNumber=stepcount)
         convertToCArrays(DACVals,Signs,ControalWords)
-        fig.savefig('microstep'+str(DACVals.shape[0]).zfill(4)+'.png')
+        fig.savefig('microsteps\microstep'+str(DACVals.shape[0]).zfill(4)+'.png')

@@ -11,6 +11,7 @@
 #include <SPI.h>
 #include <inttypes.h>
 #include <math.h>
+#include "microsteps/microstep0064.h"
 
 // library interface description
 class fpstepper {
